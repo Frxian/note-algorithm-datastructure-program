@@ -64,4 +64,594 @@ i = i0 + j*s
 #### Elementary file operations
 
 * To `write` and `read` a file, we need an object called `rider`, which itself `connected` with a `file(sequence)`, and which implements a certain `access mechanism`.
+
+#### Buffering sequences
+
+* `Buffering` has an additional advantage in allowing the `process` which `generates (receives) data` to proceed `concurrently` with the device that `writes (reads) the data` from (to) the buffer.
+* `A buffer` essentially constitutes a `first- in-first-out queue` (fifo). If it is declared as an array, two `index variables`, say *in* and *out*, mark the positions of the next location to be written into and to be read from. 
+* <img src="/Users/frxianz/Library/Application Support/typora-user-images/image-20231207101105711.png" alt="image-20231207101105711" style="zoom:40%;" />
+
+#### Textual input and output
+
+* If the `data set` can be considered as `a sequence of characters`, `the transformation of the sequence` can be implemented as a `sequence of (identical) transformations of elements`
+
+  ```pseudocode
+  T(<s0, s1, ... , sn-1>) = <T(s0), T(s1), ... , T(sn-1)>
+  ```
+
+* The simple algorithm `terminates` with the reading of the `first character` that is not a `digit`. (Arithmetic overflow is not considered)
+
+  ```pseudocode
+  x := 0; Read(ch);
+  WHILE ("0" <= ch) & (ch <= "9") DO
+  x := 10*x + (ORD(ch) - ORD("0")); Read(ch) END
+  ```
+
+### Searching
+
+* `More information` about searched data is provided, a search could be `speeded up`(like ordered data).
 * 
+
+#### Linear search
+
+* There are `two conditions` which terminate the search:
+
+  * The element is `found`, i.e. ai = x.
+  * The entire array has been scanned, and `no match` was found.
+
+* A simple algorithm with a `sentinel`:
+
+  ```pseudocode
+  a: ARRAY N+1 OF INTEGER
+  a[N] := x; // as a sentinel.
+  i := 0;
+  WHILE a[i] # x DO INC(i) END
+  find the element if(ai =x)&&(Ak:0 k<i:ak x)
+  ```
+
+#### Binary search
+
+* It uses `two index variables L and R` marking the left and at the right end of the section of *a* in which an element may still be found.
+
+* **Algorithm**:
+
+  ```pseudocode
+  L := 0; R := N-1; found := FALSE ;
+  WHILE (L <= R) & ~found DO
+      m := any value between L and R;
+      IF a[m] = x THEN found := TRUE
+      ELSIF a[m] < x THEN L := m+1
+      ELSE R := m-1
+      END
+  END
+  ```
+
+* **Algorithm with efficiency**:
+
+  * The `optimal` solution is to choose the` middle element` for `m`, because this eliminates `half of the array` in any case.
+
+  * To get an algorithm with efficiency,  `we should not terminate the search as soon as a match is established.`
+
+  * Algorithm:
+
+    ```pseudocode
+    L := 0; R := N; // not N-1
+    WHILE L < R DO
+    	m := (L+R) DIV 2;
+    	IF a[m] < x THEN L := m+1 
+    	ELSE R := m // R always points the searched data if exists
+    	END
+    END
+    find the element if a[R]=x
+    ```
+
+#### Table search
+
+* A search through an array is sometimes also called a *table search*, particularly if the keys are themselves `structured objects`, such as `arrays of numbers` or `characters`.
+
+* Assuming that `N` may be fairly large and that the table is `alphabetically ordered`, we shall use `a binary search`. Using the algorithms for `binary search` and `string comparison` developed above.
+
+* Algorithm:
+
+  ```pseudocode
+  T: ARRAY N OF String;
+  x: String
+  
+  L := 0; R := N; 
+  WHILE L < R DO
+  	m := (L+R) DIV 2; i := 0;
+  	WHILE (T[m,i] = x[i]) & (x[i] # 0C) DO i := i+1 END ; 
+  	IF T[m,i] < x[i] THEN L := m+1 ELSE R := m END
+  END ;
+  IF R < N THEN i := 0;
+  	WHILE (T[R,i] = x[i]) & (x[i] # 0X) DO i := i+1 END
+  END
+  (* (R < N) & (T[R,i] = x[i]) establish a match*)
+  ```
+
+#### Straight string search(string-matching)
+
+* Given an array `s of N elements` and an array `p of M elements`, where `0 < M < N`, declared as
+
+  ```pseudocode
+  s: ARRAY N OF Item (text)
+  p: ARRAY M OF Item (pattern)
+  ```
+
+  `string search` is the task of finding the `first occurrence` of p in s. 
+
+* **Naive Algorithm**
+
+  * a predicate `P(i,j) = Ak:0 <= k < j : s(i+k) = p(k)`
+
+  * `Q(i) = Ak:0 <= k < i : ~P(k,M)`
+
+  * ```pseudocode
+    i:= -1;
+    REPEAT INC(i); j := 0; (* Q(i) *)
+    	WHILE (j < M) & (s[i+j] = p[j]) DO (* P(i, j+1) *) INC(j) END
+    	(* Q(i) & P(i,j) & ((j = M) OR (s[i+j] # p[i+j])) *)
+    UNTIL (j = M) OR (i = N-M)
+    ```
+
+#### The Knuth-Morris-Pratt string search(KMP)
+
+* `The basic idea` behind KMP’s algorithm is: whenever we detect a `mismatch` (after some matches), we already know `some of the characters` in the text of the next window. We take advantage of `this information` to avoid matching the characters that we know will anyway match. 
+
+* This information is sorted in `LPS table`, `lps[I]` = the `longest proper prefix` of pat[0..i] which is also a `suffix`of pat[0..I].
+
+  ```pseudocode
+  // Build LPS table algorithm
+  algorithm kmp_table:
+      input:
+          an array of characters, W (the word to be analyzed)
+      output:
+          an array of integers, T (the table to be filled)
+  
+      define variables:
+          an integer, pos ← 1 (the current position we are computing in T)
+          an integer, cnd ← 0 (the zero-based index in W of the next character of the current candidate substring)
+  
+      let T[0] ← -1
+  
+      while pos < length(W) do
+          if W[pos] = W[cnd] then
+              let T[pos] ← T[cnd]
+          else
+              let T[pos] ← cnd
+              while cnd ≥ 0 and W[pos] ≠ W[cnd] do
+                  let cnd ← T[cnd]
+          let pos ← pos + 1, cnd ← cnd + 1
+  
+      let T[pos] ← cnd (only needed when all word occurrences are searched)
+  ```
+
+* Search algorithm:
+
+  ```pseudocode
+  algorithm kmp_search:
+      input:
+          an array of characters, S (the text to be searched)
+          an array of characters, W (the word sought)
+      output:
+          an array of integers, P (positions in S at which W is found)
+          an integer, nP (number of positions)
+  
+      define variables:
+          an integer, j ← 0 (the position of the current character in S)
+          an integer, k ← 0 (the position of the current character in W)
+          an array of integers, T (the table, computed elsewhere)
+  
+      let nP ← 0
+  
+      while j < length(S) do
+          if W[k] = S[j] then
+              let j ← j + 1
+              let k ← k + 1
+              if k = length(W) then
+                  (occurrence found, if only first occurrence is needed, m ← j - k  may be returned here)
+                  let P[nP] ← j - k, nP ← nP + 1
+                  let k ← T[k] (T[length(W)] can't be -1)
+          else
+              let k ← T[k]
+              if k < 0 then
+                  let j ← j + 1
+                  let k ← k + 1
+  ```
+
+## Sorting
+
+* `Sorting` is generally understood to be the process of `rearranging a given set of objects` in a specific order. The purpose of sorting is to facilitate `the later search` for members of the sorted set.
+* `Sorting methods` are generally classified into `two categories`: `sorting of arrays` and `sorting of (sequential) files`.
+
+### Some terminology and notation about sorting
+
+* given `n items`: 
+
+  a0, a1, ... , a~n-1~
+
+* sorting consists of permuting these items into `an array`: 
+
+  a~k0~,a~k1~, ... , a~k[n-1]~
+
+* given an `ordering function f`,
+
+  f(a~k0~) <= f(a~k1~) <=  ... <= f(a~k[n-1]~)
+
+*  The `value` of the ordering function is called the `key` of the `item`.
+
+* A sorting method is called `stable` if `the relative order` of items with equal keys remains `unchanged` by the sorting process. 
+
+### Sorting arrays
+
+*  `Straight sorting methods` can be classified into `three` principal categories:
+  * Sorting by insertion
+  * Sorting by selection
+  * Sorting by exchange
+* TYPE Item = INTEGER; VAR a: ARRAY n OF Item
+
+#### Sorting by Straight Insertion
+
+* **Algorithm**:
+
+```pseudocode
+PROCEDURE StraightInsertion; 
+VAR i, j: INTEGER; x: Item;
+BEGIN
+	FOR i := 1 TO n-1 DO
+		x := a[i]; j := i;
+		WHILE (j > 0) & (x < a[j-1] DO a[j] := a[j-1]; DEC(j) END ; 
+		a[j] := x
+	END
+END StraightInsertion
+```
+
+* **Refined Algorithm**(binary insertion sorting)
+
+  ```pseudocode
+  PROCEDURE BinaryInsertion(VAR a: ARRAY OF Item; n: INTEGER); 
+  VAR i, j, m, L, R: INTEGER; x: Item;
+  BEGIN
+    FOR i := 1 TO n-1 DO
+    x := a[i]; L := 1; R := i; 
+    WHILE L < R DO
+      m := (L+R) DIV 2;
+      IF a[m] <= x THEN L := m+1 ELSE R := m END 
+     END ;
+     FOR j:=i TO R+1 BY -1 DO a[j]:=a[j-1] END;
+     a[R] := x 
+    END
+  END BinaryInsertion
+  ```
+
+#### Sorting by Straight Selection
+
+* **Algorithm**
+
+  ```pseudocode
+  PROCEDURE StraightSelection; 
+  VAR i, j, k: INTEGER; x: Item;
+  BEGIN
+  	FOR i := 0 TO n-2 DO
+  		k := i; x := a[i];
+  		FOR j := i+1 TO n-1 DO
+  			IF a[j] < x THEN k := j; x := a[k] END 
+  		END ;
+  		a[k] := a[i]; a[i] := x 
+  	END
+  END StraightSelection
+  ```
+
+* The `difference` with straight insertion:
+
+  * Straight insertion considers in each step only `the one next item of the source sequence` and `all items of the destination array` to find the insertion point.
+  * Straight selection considers `all items of the source array` to find the one with the least key and to be deposited as the one next item of the destination sequence.
+
+#### Sorting by Straight Exchange(bubble sorting)
+
+* **Elemental algorithm**:
+
+  ```pseudocode
+  PROCEDURE BubbleSort;
+  VAR i, j: INTEGER; x: Item;
+  BEGIN
+  	FOR i := 1 TO n-1 DO
+  		FOR j := n-1 TO i BY -1 DO 
+  			IF a[j-1] > a[j] THEN
+  				x := a[j-1]; a[j-1] := a[j]; a[j] := x 
+  			END
+  		END 
+  	END
+  END BubbleSort
+  ```
+
+* **Refined algorithm(shaker sort)**:
+
+  ```pseudocode
+  PROCEDURE ShakerSort;
+  V AR j, k, L, R: INTEGER; x: Item;
+  BEGIN L := 1; R := n-1; k := R; 
+  	REPEAT
+  		FOR j := R TO L BY -1 DO 
+  			IF a[j-1] > a[j] THEN
+  				x := a[j-1]; a[j-1] := a[j]; a[j] := x; k := j END
+  		END ;
+  		L := k+1;
+  		FOR j := L TO R BY +1 DO
+  			IF a[j-1] > a[j] THEN
+  				x := a[j-1]; a[j-1] := a[j]; a[j] := x; k := j 
+  			END 
+  		END ;
+  		R := k-1 
+  	UNTIL L > R
+  END ShakerSort
+  ```
+
+#### Advanced Sorting Methods
+
+##### Insertion sort by Diminishing Increment(shell sort)
+
+* Named **Shell sort**. `Shell sort` is an optimization of insertion sort that allows the` exchange` of items that are `far apart`.
+
+* **Algorithm**
+
+  ```pseudocode
+  # Sort an array a[0...n-1].
+  gaps = [701, 301, 132, 57, 23, 10, 4, 1]  # Ciura gap sequence
+  
+  # Start with the largest gap and work down to a gap of 1
+  # similar to insertion sort but instead of 1, gap is being used in each step
+  foreach (gap in gaps)
+  {
+      # Do a gapped insertion sort for every elements in gaps
+      # Each loop leaves a[0..gap-1] in gapped order
+      for (i = gap; i < n; i += 1)
+      {
+          # save a[i] in temp and make a hole at position i
+          temp = a[i]
+          # shift earlier gap-sorted elements up until the correct location for a[i] is found
+          for (j = i; (j >= gap) && (a[j - gap] > temp); j -= gap)
+          {
+              a[j] = a[j - gap]
+          }
+          # put temp (the original a[i]) in its correct location
+          a[j] = temp
+      }
+  }
+  ```
+
+##### Selection sort by tree sort(heap sort)
+
+* `Tree sort` is the improvement of `straight selection sort`. `heapsort` divides its input into `a sorted` and an `unsorted region`, and it iteratively `shrinks the unsorted region` by extracting the `largest element` from it and `inserting it` into the sorted region.
+
+* A *heap* is defined as a sequence of keys h~L~, h~L+1~, ... , h~R~(L >= 0) such that:
+
+  h~i~< h~2i+1~ and h~i~<h~2i+2~ for i = L ... R/2-1
+
+* ![image-20231213140439586](/Users/frxianz/Library/Application Support/typora-user-images/image-20231213140439586.png)
+
+* The heapsort algorithm can be divided into `two phases`: `heap construction`, and `heap extraction`.
+
+* **Algorithm**
+
+  ```pseudocode
+  procedure heapsort(a, count) is
+      input: an unordered array a of length count
+      
+      (Build the heap in array a so that largest value is at the root)
+      heapify(a, count)
+  
+      (The following loop maintains the invariants that a[0:end−1] is a heap, and
+      every element a[end:count−1] beyond end is greater than everything before it,
+      i.e. a[end:count−1] is in sorted order.)
+      end ← count
+      while end > 1 do
+          (the heap size is reduced by one)
+          end ← end − 1
+          (a[0] is the root and largest value. The swap moves it in front of the sorted elements.)
+          swap(a[end], a[0])
+          (the swap ruined the the heap property, so restore it)
+          siftDown(a, 0, end)
+  ```
+
+  ```pseudocode
+  (Put elements of 'a' in heap order, in-place)
+  procedure heapify(a, count) is
+      (start is initialized to the first leaf node)
+      (the last element in a 0-based array is at index count-1; find the parent of that element)
+      start ← iParent(count-1) + 1
+      
+      while start > 0 do
+          (go to the last non-heap node)
+          start ← start − 1
+          (sift down the node at index 'start' to the proper place such that all nodes below the start index are in heap order)
+          siftDown(a, start, count)
+      (after sifting down the root all nodes/elements are in heap order)
+      
+  (Repair the heap whose root element is at index 'start', assuming the heaps rooted at its children are valid)
+  procedure siftDown(a, root, end) is
+      while iLeftChild(root) < end do    (While the root has at least one child)
+          child ← iLeftChild(root)       (Left child of root)
+          (If there is a right child and that child is greater)
+          if child+1 < end and a[child] < a[child+1] then
+              child ← child + 1
+      
+          if a[root] < a[child] then
+              swap(a[root], a[child])
+              root ← child         (repeat to continue sifting down the child now)
+          else
+              (The root holds the largest element. Since we may assume the heaps rooted
+               at the children are valid, this means that we are done.)
+              return
+  ```
+
+  
+
+##### Exchange sort by partition sort(quick sort)
+
+* Quicksort is based on the recognition that `exchanges` should preferably be performed over `large distances` in order to be most effective. 
+
+* **Partition Algorithm**:
+
+  * Pick any item at random (and call it x); 
+
+  * scan the array from the left until an item `ai > x` is found and then scan from the right until an item `aj < x` is found;
+
+  * Now `exchange the two items` and continue this scan and swap process until the two scans meet somewhere in the middle of the array.
+
+  * ```pseudocode
+    PROCEDURE partition;
+    	VAR i, j: INTEGER; w, x: Item;
+    BEGIN i := 0; j := n-1;
+    	select an item x at random;
+    	REPEAT
+    		WHILE a[i] < x DO i := i+1 END ;
+    		WHILE x < a[j] DO j := j-1 END ;
+    		IF i <= j THEN
+    			w := a[i]; a[i] := a[j]; a[j] := w; i := i+1; j := j-1
+    		END
+    	UNTIL i > j 
+    END partition
+    ```
+
+* **Sorting Algorithm**:
+
+  ```pseudocode
+  PROCEDURE sort(L, R: INTEGER); 
+  	VAR i, j: INTEGER; w, x: Item;
+  BEGIN i := L; j := R; x := a[(L+R) DIV 2]; 
+  REPEAT
+  	WHILE a[i] < x DO INC(i) END ; WHILE x < a[j] DO DEC(j) END ; IF i <= j THEN
+  		w := a[i]; a[i] := a[j]; a[j] := w; i := i+1; j := j-1 END
+  	UNTIL i > j;
+  	
+  	IF L < j THEN sort(L, j) END ;
+  	IF i < R THEN sort(i, R) END
+  END sort;
+  
+  PROCEDURE QuickSort; 
+  BEGIN sort(0, n-1)
+  END QuickSort
+  ```
+
+### Sorting sequences
+
+#### Straight merging
+
+* Divide the unsorted list into *n* sublists, each containing one element (a list of one element is considered sorted).
+
+* Repeatedly [merge](https://en.wikipedia.org/wiki/Merge_algorithm) sublists to produce new sorted sublists until there is only one sublist remaining. This will be the sorted list.
+
+* **Algorithm** with array:
+
+  ```pseudocode
+  // Array A[] has the items to sort; array B[] is a work array.
+  void TopDownMergeSort(A[], B[], n)
+  {
+      CopyArray(A, 0, n, B);           // one time copy of A[] to B[]
+      TopDownSplitMerge(A, 0, n, B);   // sort data from B[] into A[]
+  }
+  
+  // Split A[] into 2 runs, sort both runs into B[], merge both runs from B[] to A[]
+  // iBegin is inclusive; iEnd is exclusive (A[iEnd] is not in the set).
+  void TopDownSplitMerge(B[], iBegin, iEnd, A[])
+  {
+      if (iEnd - iBegin <= 1)                     // if run size == 1
+          return;                                 //   consider it sorted
+      // split the run longer than 1 item into halves
+      iMiddle = (iEnd + iBegin) / 2;              // iMiddle = mid point
+      // recursively sort both runs from array A[] into B[]
+      TopDownSplitMerge(A, iBegin,  iMiddle, B);  // sort the left  run
+      TopDownSplitMerge(A, iMiddle,    iEnd, B);  // sort the right run
+      // merge the resulting runs from array B[] into A[]
+      TopDownMerge(B, iBegin, iMiddle, iEnd, A);
+  }
+  
+  //  Left source half is A[ iBegin:iMiddle-1].
+  // Right source half is A[iMiddle:iEnd-1   ].
+  // Result is            B[ iBegin:iEnd-1   ].
+  void TopDownMerge(B[], iBegin, iMiddle, iEnd, A[])
+  {
+      i = iBegin, j = iMiddle;
+   
+      // While there are elements in the left or right runs...
+      for (k = iBegin; k < iEnd; k++) {
+          // If left run head exists and is <= existing right run head.
+          if (i < iMiddle && (j >= iEnd || A[i] <= A[j])) {
+              B[k] = A[i];
+              i = i + 1;
+          } else {
+              B[k] = A[j];
+              j = j + 1;
+          }
+      }
+  }
+  
+  void CopyArray(A[], iBegin, iEnd, B[])
+  {
+      for (k = iBegin; k < iEnd; k++)
+          B[k] = A[k];
+  }
+  ```
+
+* **Algorithm** with list:
+
+  ```pseudocode
+  function merge_sort(list m) is
+      // Base case. A list of zero or one elements is sorted, by definition.
+      if length of m ≤ 1 then
+          return m
+  
+      // Recursive case. First, divide the list into equal-sized sublists
+      // consisting of the first half and second half of the list.
+      // This assumes lists start at index 0.
+      var left := empty list
+      var right := empty list
+      for each x with index i in m do
+          if i < (length of m)/2 then
+              add x to left
+          else
+              add x to right
+  
+      // Recursively sort both sublists.
+      left := merge_sort(left)
+      right := merge_sort(right)
+  
+      // Then merge the now-sorted sublists.
+      return merge(left, right)
+      
+      function merge(left, right) is
+      var result := empty list
+  
+      while left is not empty and right is not empty do
+          if first(left) ≤ first(right) then
+              append first(left) to result
+              left := rest(left)
+          else
+              append first(right) to result
+              right := rest(right)
+  
+      // Either left or right may have elements left; consume them.
+      // (Only one of the following loops will actually be entered.)
+      while left is not empty do
+          append first(left) to result
+          left := rest(left)
+      while right is not empty do
+          append first(right) to result
+          right := rest(right)
+      return result
+  ```
+
+## Recursive algorithms
+
+* The `power` of recursion evidently lies in the possibility of defining `an infinite set of objects` by a `finite statement`.
+* In general, a `recursive program P` can be expressed as a composition **P** of a sequence of statements S (not containing P) and P itself.
+   P = **P**[S, P]
+* Need `a condition B` to terminate recursive procedure P:
+   P = IF B THEN **P**[S, P] END
+
+### Backtracking
+
+* Backtracking is an algorithmic paradigm that tries different solutions until finds a solution that “works”.
+* These problems can only be solved by trying every possible configuration and each configuration is tried only once. 
+* Backtracking works incrementally and is an optimization over the Naive solution where all possible configurations are generated and tried.

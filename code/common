@@ -1,0 +1,10 @@
+// common functions or marcos
+/// output
+#pragma once
+
+#include <iostream>
+#include <span>
+
+#define OUT(x) std::cout << "output: " << x << std::endl;
+
+#define FOR_OUT(arr) for (auto i : std::span{arr}) { OUT(i); }
